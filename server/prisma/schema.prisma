@@ -1,0 +1,30 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Card {
+  id          String    @id @default(cuid())
+  areaId      String
+  column      String
+  title       String
+  urgency     String    @default("medium")
+  dueDate     String?
+  notes       String?
+  progress    Int?
+  totalUnits  Int?
+  currentUnit Int?
+  itemType    String?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Auth {
+  id           String @id @default("singleton")
+  passwordHash String
+}
