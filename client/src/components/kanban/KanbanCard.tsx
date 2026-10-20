@@ -1,4 +1,4 @@
-import type { Card, UrgencyLevel } from '../../types/index.js'
+import type { Card, UrgencyLevel, UpdateCardInput } from '../../types/index.js'
 
 const URGENCY_COLOR: Record<UrgencyLevel, string> = {
   high: '#ef4444',
@@ -12,9 +12,14 @@ const URGENCY_LABEL: Record<UrgencyLevel, string> = {
   low: 'low',
 }
 
+function todayLocal(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function dueDateLabel(dueDate: string | null): { text: string; color: string } | null {
   if (!dueDate) return null
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayLocal()
   if (dueDate < today) return { text: dueDate, color: '#ef4444' }
   if (dueDate === today) return { text: 'today', color: '#f59e0b' }
   return { text: dueDate, color: '#64748b' }
@@ -23,14 +28,21 @@ function dueDateLabel(dueDate: string | null): { text: string; color: string } |
 interface Props {
   card: Card
   onDelete: (id: string) => void
+  onUpdate?: (id: string, updates: UpdateCardInput) => void
 }
 
-export default function KanbanCard({ card, onDelete }: Props) {
+export default function KanbanCard({ card, onDelete, onUpdate }: Props) {
   const due = dueDateLabel(card.dueDate)
   const progressPct =
     card.currentUnit != null && card.totalUnits != null && card.totalUnits > 0
       ? Math.round((card.currentUnit / card.totalUnits) * 100)
       : null
+
+  function increment() {
+    if (card.currentUnit == null || card.totalUnits == null) return
+    const next = Math.min(card.currentUnit + 1, card.totalUnits)
+    onUpdate?.(card.id, { currentUnit: next })
+  }
 
   return (
     <div
@@ -77,9 +89,20 @@ export default function KanbanCard({ card, onDelete }: Props) {
               style={{ width: `${progressPct}%`, backgroundColor: '#f59e0b' }}
             />
           </div>
-          <span className="text-xs text-slate-500 mt-0.5 block">
-            {card.currentUnit}/{card.totalUnits}
-          </span>
+          <div className="flex items-center justify-between mt-0.5">
+            <span className="text-xs text-slate-500">
+              {card.currentUnit}/{card.totalUnits}
+            </span>
+            {onUpdate && card.currentUnit !== card.totalUnits && (
+              <button
+                onClick={e => { e.stopPropagation(); increment() }}
+                className="text-xs text-slate-500 hover:text-slate-300 transition-colors px-1"
+                aria-label="Advance progress"
+              >
+                +1
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>

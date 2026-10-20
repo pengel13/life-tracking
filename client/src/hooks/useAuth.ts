@@ -10,11 +10,17 @@ export function useAuth() {
     setAuthenticated(true)
   }
 
+  async function setup(password: string): Promise<void> {
+    const { token } = await api.post<{ token: string }>('/api/auth/setup', { password })
+    setToken(token)
+    setAuthenticated(true)
+  }
+
   function logout() {
     clearToken()
     setAuthenticated(false)
     window.location.replace('/login')
   }
 
-  return { login, logout, isAuthenticated: authenticated }
+  return { login, setup, logout, isAuthenticated: authenticated }
 }

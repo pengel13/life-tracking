@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Droppable, Draggable } from '@hello-pangea/dnd'
-import type { Area, Card, CreateCardInput } from '../../types/index.js'
+import type { Area, Card, CreateCardInput, UpdateCardInput } from '../../types/index.js'
 import KanbanCard from './KanbanCard.js'
 import AddCardForm from './AddCardForm.js'
 
@@ -10,9 +10,10 @@ interface Props {
   cards: Card[]
   onAdd: (input: CreateCardInput) => Promise<void>
   onDelete: (id: string) => void
+  onUpdate: (id: string, updates: UpdateCardInput) => Promise<void>
 }
 
-export default function KanbanColumn({ area, column, cards, onAdd, onDelete }: Props) {
+export default function KanbanColumn({ area, column, cards, onAdd, onDelete, onUpdate }: Props) {
   const [adding, setAdding] = useState(false)
 
   async function handleAdd(input: CreateCardInput) {
@@ -52,7 +53,7 @@ export default function KanbanColumn({ area, column, cards, onAdd, onDelete }: P
                       opacity: dragSnapshot.isDragging ? 0.9 : 1,
                     }}
                   >
-                    <KanbanCard card={card} onDelete={onDelete} />
+                    <KanbanCard card={card} onDelete={onDelete} onUpdate={onUpdate} />
                   </div>
                 )}
               </Draggable>

@@ -1,13 +1,21 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth.js'
+import { api } from '../api/client.js'
 
 export default function Login() {
-  const { login } = useAuth()
+  const { login, setup } = useAuth()
   const navigate = useNavigate()
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [configured, setConfigured] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    api.get<{ configured: boolean }>('/api/auth/status')
+      .then(data => setConfigured(data.configured))
+      .catch(() => setConfigured(true)) // assume configured on network error
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -15,14 +23,25 @@ export default function Login() {
     setError('')
     setLoading(true)
     try {
-      await login(password)
+      if (configured) {
+        await login(password)
+      } else {
+        await setup(password)
+      }
       navigate('/', { replace: true })
     } catch {
-      setError('Wrong password. Try again.')
+      setError(configured ? 'Wrong password. Try again.' : 'Could not set password. Try again.')
     } finally {
       setLoading(false)
     }
   }
+
+  if (configured === null) {
+    return <div className="min-h-screen" style={{ backgroundColor: '#0f172a' }} />
+  }
+
+  const heading = configured ? 'Enter your password' : 'Set your password'
+  const buttonLabel = loading ? (configured ? 'Signing in…' : 'Setting up…') : (configured ? 'Sign in' : 'Set password')
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0f172a' }}>
@@ -32,7 +51,7 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center px-6">
         <form onSubmit={handleSubmit} className="w-full max-w-xs">
           <h1 className="text-2xl font-semibold text-slate-100 mb-8">
-            Enter your password
+            {heading}
           </h1>
           <div className="flex flex-col gap-3">
             <input
@@ -60,7 +79,7 @@ export default function Login() {
               onMouseEnter={e => { if (!loading && password) (e.target as HTMLElement).style.backgroundColor = '#1e4a7a' }}
               onMouseLeave={e => (e.target as HTMLElement).style.backgroundColor = '#1e3a5f'}
             >
-              {loading ? 'Signing in…' : 'Sign in'}
+              {buttonLabel}
             </button>
           </div>
         </form>

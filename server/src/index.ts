@@ -5,6 +5,11 @@ import { requireAuth } from './middleware/auth.js'
 import authRouter from './routes/auth.js'
 import cardsRouter from './routes/cards.js'
 
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is not set')
+  process.exit(1)
+}
+
 const app = express()
 const PORT = process.env.PORT || 3001
 
@@ -17,7 +22,7 @@ if (process.env.NODE_ENV !== 'test') {
   const __dirname = path.dirname(fileURLToPath(import.meta.url))
   const clientDist = path.join(__dirname, '../../client/dist')
   app.use(express.static(clientDist))
-  app.get('*', (_req, res) => {
+  app.use((_req, res) => {
     res.sendFile(path.join(clientDist, 'index.html'))
   })
 

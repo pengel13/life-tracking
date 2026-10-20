@@ -1,7 +1,19 @@
 import type { Card } from '../../types/index.js'
 
-function todayStr() {
-  return new Date().toISOString().split('T')[0]
+function todayLocal(): string {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function localDateOf(isoString: string): string {
+  const d = new Date(isoString)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 interface StatTileProps {
@@ -27,7 +39,7 @@ function StatTile({ testId, value, label, color }: StatTileProps) {
 }
 
 export default function StatsRow({ cards }: { cards: Card[] }) {
-  const today = todayStr()
+  const today = todayLocal()
 
   const remaining = cards.filter(c => c.column !== 'Done').length
 
@@ -35,7 +47,7 @@ export default function StatsRow({ cards }: { cards: Card[] }) {
 
   const doneToday = cards.filter(c => {
     if (!c.completedAt) return false
-    return c.completedAt.split('T')[0] === today
+    return localDateOf(c.completedAt) === today
   }).length
 
   return (

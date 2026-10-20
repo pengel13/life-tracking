@@ -5,6 +5,11 @@ import { db } from '../lib/db.js'
 
 const router = Router()
 
+router.get('/status', async (_req, res) => {
+  const auth = await db.auth.findUnique({ where: { id: 'singleton' } })
+  res.json({ configured: !!auth })
+})
+
 router.post('/setup', async (req, res) => {
   const { password } = req.body
   if (!password) {

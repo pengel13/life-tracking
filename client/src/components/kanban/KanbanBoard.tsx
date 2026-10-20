@@ -45,6 +45,7 @@ export default function KanbanBoard() {
                 cards={columnCards}
                 onAdd={handleAdd}
                 onDelete={deleteCard}
+                onUpdate={updateCard}
               />
             )
           })}

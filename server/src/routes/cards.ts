@@ -42,15 +42,20 @@ router.post('/', async (req, res) => {
 
 router.patch('/:id', async (req, res) => {
   const { id } = req.params
-  const updates = { ...req.body }
+  const { column, title, urgency, dueDate, notes, itemType, totalUnits, currentUnit } = req.body
 
-  if ('column' in updates) {
-    if (updates.column === 'Done') {
-      updates.completedAt = new Date()
-    } else {
-      updates.completedAt = null
-    }
+  const updates: Record<string, unknown> = {}
+  if (column !== undefined) {
+    updates.column = column
+    updates.completedAt = column === 'Done' ? new Date() : null
   }
+  if (title !== undefined) updates.title = title
+  if (urgency !== undefined) updates.urgency = urgency
+  if (dueDate !== undefined) updates.dueDate = dueDate
+  if (notes !== undefined) updates.notes = notes
+  if (itemType !== undefined) updates.itemType = itemType
+  if (totalUnits !== undefined) updates.totalUnits = totalUnits
+  if (currentUnit !== undefined) updates.currentUnit = currentUnit
 
   const card = await db.card.update({ where: { id }, data: updates })
   res.json(card)

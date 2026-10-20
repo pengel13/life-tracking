@@ -53,6 +53,13 @@ describe('Cards API', () => {
     expect(res.body.completedAt).toBeNull()
   })
 
+  test('PATCH /api/cards/:id ignores areaId to prevent cross-area moves', async () => {
+    const card = (await authed('post', '/api/cards').send({ areaId: 'job1', column: 'To Do', title: 'x' })).body
+    const res = await authed('patch', `/api/cards/${card.id}`).send({ areaId: 'job2' })
+    expect(res.status).toBe(200)
+    expect(res.body.areaId).toBe('job1')
+  })
+
   test('GET /api/cards excludes archived cards (completedAt > 90 days)', async () => {
     const old = await db.card.create({
       data: {
