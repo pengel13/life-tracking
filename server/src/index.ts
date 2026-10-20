@@ -1,6 +1,7 @@
 import express from 'express'
 import { requireAuth } from './middleware/auth.js'
 import authRouter from './routes/auth.js'
+import cardsRouter from './routes/cards.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -8,11 +9,7 @@ const PORT = process.env.PORT || 3001
 app.use(express.json())
 
 app.use('/api/auth', authRouter)
-
-// Cards router mounted here — implemented in Task 4
-app.get('/api/cards', requireAuth, (_req, res) => {
-  res.json([])
-})
+app.use('/api/cards', requireAuth, cardsRouter)
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
