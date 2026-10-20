@@ -1,4 +1,6 @@
 import express from 'express'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import { requireAuth } from './middleware/auth.js'
 import authRouter from './routes/auth.js'
 import cardsRouter from './routes/cards.js'
@@ -12,6 +14,13 @@ app.use('/api/auth', authRouter)
 app.use('/api/cards', requireAuth, cardsRouter)
 
 if (process.env.NODE_ENV !== 'test') {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url))
+  const clientDist = path.join(__dirname, '../../client/dist')
+  app.use(express.static(clientDist))
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(clientDist, 'index.html'))
+  })
+
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
   })
