@@ -9,6 +9,8 @@ const testDb = new PrismaClient()
 beforeEach(async () => {
   await testDb.auth.deleteMany()
   await testDb.card.deleteMany()
+  await testDb.syncAccount.deleteMany()
+  await testDb.syncRule.deleteMany()
 })
 
 afterAll(async () => {

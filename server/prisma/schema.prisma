@@ -20,6 +20,9 @@ model Card {
   currentUnit Int?
   itemType    String?
   completedAt DateTime?
+  source      String?
+  sourceUrl   String?
+  externalId  String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -27,4 +30,33 @@ model Card {
 model Auth {
   id           String @id @default("singleton")
   passwordHash String
+}
+
+model SyncAccount {
+  id           String    @id @default(cuid())
+  displayName  String
+  email        String
+  tenantId     String
+  msAccountId  String    @unique
+  accessToken  String
+  refreshToken String
+  tokenExpiry  DateTime
+  scopes       String
+  lastSyncAt   DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+model SyncRule {
+  id        String   @id @default(cuid())
+  name      String
+  source    String
+  fromEmail String?
+  keyword   String?
+  accountId String?
+  areaId    String
+  column    String
+  urgency   String   @default("medium")
+  priority  Int      @default(0)
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
 }
