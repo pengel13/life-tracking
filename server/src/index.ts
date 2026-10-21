@@ -5,6 +5,7 @@ import { requireAuth } from './middleware/auth.js'
 import authRouter from './routes/auth.js'
 import cardsRouter from './routes/cards.js'
 import syncRouter from './routes/sync.js'
+import { startSyncWorker } from './workers/syncWorker.js'
 
 if (!process.env.JWT_SECRET) {
   console.error('FATAL: JWT_SECRET environment variable is not set')
@@ -36,6 +37,7 @@ if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
   })
+  startSyncWorker()
 }
 
 export default app
