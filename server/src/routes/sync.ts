@@ -120,6 +120,46 @@ router.get('/accounts/callback', async (req, res) => {
   }
 })
 
+// --- Rules ---
+
+router.get('/rules', async (_req, res) => {
+  const rules = await db.syncRule.findMany({ orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }] })
+  res.json(rules)
+})
+
+router.post('/rules', async (req, res) => {
+  const { name, source, fromEmail, keyword, accountId, areaId, column, urgency, priority } = req.body
+  if (!name || !source || !areaId || !column) {
+    res.status(400).json({ error: 'name, source, areaId, and column are required' })
+    return
+  }
+  const rule = await db.syncRule.create({
+    data: {
+      name,
+      source,
+      fromEmail: fromEmail ?? null,
+      keyword: keyword ?? null,
+      accountId: accountId ?? null,
+      areaId,
+      column,
+      urgency: urgency ?? 'medium',
+      priority: priority ?? 0,
+    },
+  })
+  res.status(201).json(rule)
+})
+
+router.delete('/rules/:id', async (req, res) => {
+  const { id } = req.params
+  const existing = await db.syncRule.findUnique({ where: { id } })
+  if (!existing) {
+    res.status(404).json({ error: 'Rule not found' })
+    return
+  }
+  await db.syncRule.delete({ where: { id } })
+  res.status(204).send()
+})
+
 // --- Token refresh helper (exported for workers) ---
 
 export async function refreshAccountToken(account: SyncAccount): Promise<SyncAccount> {
