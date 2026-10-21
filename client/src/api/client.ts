@@ -49,3 +49,15 @@ export const api = {
   patch: <T>(path: string, body: unknown) => request<T>('PATCH', path, body),
   delete: (path: string) => request<void>('DELETE', path),
 }
+
+import type { SyncAccount, SyncRule, CreateSyncRuleInput } from '../types/index.js'
+
+export const syncApi = {
+  getAccounts: () => api.get<SyncAccount[]>('/api/sync/accounts'),
+  connectAccount: (accountHint?: string) =>
+    api.post<{ authUrl: string }>('/api/sync/accounts/connect', { accountHint }),
+  deleteAccount: (id: string) => api.delete(`/api/sync/accounts/${id}`),
+  getRules: () => api.get<SyncRule[]>('/api/sync/rules'),
+  createRule: (input: CreateSyncRuleInput) => api.post<SyncRule>('/api/sync/rules', input),
+  deleteRule: (id: string) => api.delete(`/api/sync/rules/${id}`),
+}

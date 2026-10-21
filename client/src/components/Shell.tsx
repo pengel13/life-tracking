@@ -20,6 +20,26 @@ function HomeIcon() {
   )
 }
 
+function SyncIcon() {
+  return (
+    <svg
+      width="18" height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 2v6h-6" />
+      <path d="M3 12a9 9 0 0115-6.7L21 8" />
+      <path d="M3 22v-6h6" />
+      <path d="M21 12a9 9 0 01-15 6.7L3 16" />
+    </svg>
+  )
+}
+
 function areaAbbr(label: string): string {
   const parts = label.split(' ')
   if (parts.length >= 2 && /^\d$/.test(parts[parts.length - 1])) {
@@ -44,6 +64,7 @@ export default function Shell() {
   const { pathname } = useLocation()
 
   const isHome = pathname === '/'
+  const isSync = pathname === '/sync'
   const activeAreaId = pathname.startsWith('/area/') ? pathname.split('/')[2] : null
 
   function SidebarItem({
@@ -130,6 +151,12 @@ export default function Shell() {
             <AreaSquare area={area} />
           </SidebarItem>
         ))}
+
+        <div className="mx-3 my-1 border-t border-slate-700/40" />
+
+        <SidebarItem to="/sync" isActive={isSync} title="Microsoft Sync">
+          <SyncIcon />
+        </SidebarItem>
       </nav>
 
       {/* Mobile bottom bar */}
@@ -152,6 +179,9 @@ export default function Shell() {
             <AreaSquare area={area} />
           </BottomItem>
         ))}
+        <BottomItem to="/sync" isActive={isSync} title="Microsoft Sync">
+          <SyncIcon />
+        </BottomItem>
       </nav>
 
       {/* Page content */}

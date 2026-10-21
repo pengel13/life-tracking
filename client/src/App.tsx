@@ -4,6 +4,7 @@ import Shell from './components/Shell.js'
 import Login from './components/Login.js'
 import Dashboard from './components/dashboard/Dashboard.js'
 import KanbanBoard from './components/kanban/KanbanBoard.js'
+import SyncSettings from './components/sync/SyncSettings.js'
 
 function AuthGuard() {
   if (!isAuthenticated()) return <Navigate to="/login" replace />
@@ -18,6 +19,7 @@ export default function App() {
         <Route element={<AuthGuard />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/area/:areaId" element={<KanbanBoard />} />
+          <Route path="/sync" element={<SyncSettings />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
