@@ -4,6 +4,7 @@ import app from '../src/index.js'
 import { applyRules } from '../src/lib/rulesEngine.js'
 import type { SyncMessage } from '../src/lib/rulesEngine.js'
 import { buildCard } from '../src/workers/outlookSync.js'
+import { buildTeamsMessage } from '../src/workers/teamsSync.js'
 
 let token: string
 beforeEach(async () => {
@@ -127,5 +128,22 @@ describe('Outlook sync', () => {
     expect(card.source).toBe('email')
     expect(card.externalId).toBe('id1')
     expect(card.column).toBe('To Do')
+  })
+})
+
+describe('Teams sync', () => {
+  test('buildTeamsMessage extracts preview from body content', () => {
+    const rawMsg = {
+      id: 'tm1',
+      body: { content: '<p>Hello team, please review the quarterly report</p>' },
+      from: { user: { email: 'alice@co.com' } },
+      webUrl: 'https://teams.microsoft.com/l/message/1',
+    }
+    const msg = buildTeamsMessage(rawMsg, 'acc1')
+    expect(msg.externalId).toBe('teams:tm1')
+    expect(msg.fromEmail).toBe('alice@co.com')
+    expect(msg.subject).toContain('Hello team')
+    expect(msg.source).toBe('teams')
+    expect(msg.sourceUrl).toBe('https://teams.microsoft.com/l/message/1')
   })
 })
