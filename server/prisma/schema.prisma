@@ -22,7 +22,7 @@ model Card {
   completedAt DateTime?
   source      String?
   sourceUrl   String?
-  externalId  String?
+  externalId  String?   @unique
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }

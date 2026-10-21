@@ -147,3 +147,30 @@ describe('Teams sync', () => {
     expect(msg.sourceUrl).toBe('https://teams.microsoft.com/l/message/1')
   })
 })
+
+describe('OAuth callback route bypass', () => {
+  test('GET /api/sync/accounts/callback does not return 401 (no auth required)', async () => {
+    // Invalid state — redirects to /sync?error=invalid_state, NOT 401
+    const res = await request(app).get('/api/sync/accounts/callback?state=not_a_real_nonce')
+    expect(res.status).toBe(302)
+    expect(res.headers.location).toContain('/sync')
+  })
+})
+
+describe('Card externalId uniqueness', () => {
+  test('second insert with same externalId throws P2002 unique constraint violation', async () => {
+    const { db } = await import('../src/lib/db.js')
+    await db.card.create({ data: { areaId: 'job1', column: 'To Do', title: 'First', externalId: 'email:dedup-test-abc' } })
+    await expect(
+      db.card.create({ data: { areaId: 'job1', column: 'To Do', title: 'Duplicate', externalId: 'email:dedup-test-abc' } })
+    ).rejects.toMatchObject({ code: 'P2002' })
+  })
+
+  test('multiple cards with null externalId are allowed', async () => {
+    const { db } = await import('../src/lib/db.js')
+    await db.card.create({ data: { areaId: 'job1', column: 'To Do', title: 'Card A', externalId: null } })
+    await db.card.create({ data: { areaId: 'job1', column: 'To Do', title: 'Card B', externalId: null } })
+    const nullCards = await db.card.findMany({ where: { externalId: null } })
+    expect(nullCards.length).toBeGreaterThanOrEqual(2)
+  })
+})

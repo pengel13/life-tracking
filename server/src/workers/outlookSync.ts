@@ -67,11 +67,13 @@ export async function syncOutlook(
     const rule = applyRules(msg, rules)
     if (!rule) continue
 
-    const existing = await db.card.findFirst({ where: { externalId: msg.externalId } })
-    if (existing) continue
-
-    await db.card.create({ data: buildCard(msg, rule) })
-    created++
+    try {
+      await db.card.create({ data: buildCard(msg, rule) })
+      created++
+    } catch (err) {
+      if ((err as { code?: string }).code !== 'P2002') throw err
+      // P2002: unique constraint on externalId — already synced, skip
+    }
   }
 
   await db.syncAccount.update({

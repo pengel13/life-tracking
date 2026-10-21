@@ -84,15 +84,20 @@ export async function syncTeams(
                 .top(20)
                 .get()
               rawMessages.push(...(msgsResp.value ?? []))
-            } catch {
-              // skip individual channel errors
+            } catch (err: unknown) {
+              const status = (err as { statusCode?: number })?.statusCode
+              if (status === 403) {
+                console.warn(
+                  `channel ${channel.id} message sync skipped for tenant ${account.tenantId} — ChannelMessage.Read.All admin consent missing`,
+                )
+              }
             }
           }
         } catch (err: unknown) {
           const status = (err as { statusCode?: number })?.statusCode
           if (status === 403) {
             console.warn(
-              `channel sync skipped for tenant ${account.tenantId} — admin consent missing`,
+              `channel listing skipped for tenant ${account.tenantId} — admin consent missing`,
             )
           }
         }
@@ -110,11 +115,13 @@ export async function syncTeams(
     const rule = applyRules(msg, rules)
     if (!rule) continue
 
-    const existing = await db.card.findFirst({ where: { externalId: msg.externalId } })
-    if (existing) continue
-
-    await db.card.create({ data: buildCard(msg, rule) })
-    created++
+    try {
+      await db.card.create({ data: buildCard(msg, rule) })
+      created++
+    } catch (err) {
+      if ((err as { code?: string }).code !== 'P2002') throw err
+      // P2002: unique constraint on externalId — already synced, skip
+    }
   }
 
   await db.syncAccount.update({

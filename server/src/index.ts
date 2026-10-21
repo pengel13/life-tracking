@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url'
 import { requireAuth } from './middleware/auth.js'
 import authRouter from './routes/auth.js'
 import cardsRouter from './routes/cards.js'
-import syncRouter from './routes/sync.js'
+import syncRouter, { oauthCallbackHandler } from './routes/sync.js'
 import { startSyncWorker } from './workers/syncWorker.js'
 
 if (!process.env.JWT_SECRET) {
@@ -20,10 +20,8 @@ app.use(express.json())
 app.use('/api/auth', authRouter)
 app.use('/api/cards', requireAuth, cardsRouter)
 
-// Callback must bypass requireAuth — Microsoft redirects here unauthenticated
-app.get('/api/sync/accounts/callback', (req, res, next) => {
-  syncRouter(req, res, next)
-})
+// Callback mounted before requireAuth — Microsoft redirects here unauthenticated
+app.get('/api/sync/accounts/callback', oauthCallbackHandler)
 app.use('/api/sync', requireAuth, syncRouter)
 
 if (process.env.NODE_ENV !== 'test') {

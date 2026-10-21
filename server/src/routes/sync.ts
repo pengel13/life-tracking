@@ -1,13 +1,14 @@
 import { Router } from 'express'
+import type { RequestHandler } from 'express'
 import crypto from 'crypto'
 import { Client } from '@microsoft/microsoft-graph-client'
 import type { SyncAccount } from '@prisma/client'
 import { db } from '../lib/db.js'
-import { getMsalClient } from '../lib/msalConfig.js'
+import { getMsalClient, createMsalClient } from '../lib/msalConfig.js'
 
 const router = Router()
 
-const OAUTH_SCOPES = ['Mail.Read', 'Chat.Read', 'ChannelMessage.Read.All', 'User.Read', 'offline_access']
+const OAUTH_SCOPES = ['Mail.Read', 'Chat.Read', 'ChannelMessage.Read.All', 'Channel.ReadBasic.All', 'User.Read', 'offline_access']
 
 // In-memory nonce store: nonce → created timestamp
 const pendingNonces = new Map<string, number>()
@@ -54,10 +55,9 @@ router.delete('/accounts/:id', async (req, res) => {
   res.status(204).send()
 })
 
-// --- OAuth callback (no auth middleware — Microsoft redirects here) ---
-// NOTE: This route is mounted BEFORE requireAuth in index.ts
+// --- OAuth callback (exported for direct app.get mount, bypasses requireAuth) ---
 
-router.get('/accounts/callback', async (req, res) => {
+export const oauthCallbackHandler: RequestHandler = async (req, res) => {
   const { code, state, error } = req.query as Record<string, string>
 
   if (error) {
@@ -83,6 +83,9 @@ router.get('/accounts/callback', async (req, res) => {
       return
     }
 
+    // Serialize the MSAL token cache (contains the refresh token internally)
+    const tokenCache = msal.getTokenCache().serialize()
+
     // Fetch user profile
     const graphClient = Client.init({
       authProvider: (done) => done(null, result.accessToken),
@@ -97,7 +100,7 @@ router.get('/accounts/callback', async (req, res) => {
       where: { msAccountId },
       update: {
         accessToken: result.accessToken,
-        refreshToken: (result as unknown as { refreshToken?: string }).refreshToken ?? '',
+        refreshToken: tokenCache,
         tokenExpiry: new Date(result.expiresOn ?? Date.now() + 3600 * 1000),
         scopes: OAUTH_SCOPES.join(' '),
       },
@@ -107,7 +110,7 @@ router.get('/accounts/callback', async (req, res) => {
         tenantId,
         msAccountId,
         accessToken: result.accessToken,
-        refreshToken: (result as unknown as { refreshToken?: string }).refreshToken ?? '',
+        refreshToken: tokenCache,
         tokenExpiry: new Date(result.expiresOn ?? Date.now() + 3600 * 1000),
         scopes: OAUTH_SCOPES.join(' '),
       },
@@ -118,7 +121,7 @@ router.get('/accounts/callback', async (req, res) => {
     console.error('OAuth callback error:', err)
     res.redirect('/sync?error=auth_failed')
   }
-})
+}
 
 // --- Rules ---
 
@@ -168,22 +171,32 @@ export async function refreshAccountToken(account: SyncAccount): Promise<SyncAcc
     return account
   }
 
-  const msal = getMsalClient()
-  const redirectUri = process.env.AZURE_REDIRECT_URI ?? 'http://localhost:3001/api/sync/accounts/callback'
+  const msal = createMsalClient()
 
   try {
-    const result = await msal.acquireTokenByRefreshToken({
-      refreshToken: account.refreshToken,
-      scopes: account.scopes.split(' '),
-      redirectUri,
-    } as Parameters<typeof msal.acquireTokenByRefreshToken>[0])
+    // Deserialize the stored MSAL token cache (contains the refresh token internally)
+    msal.getTokenCache().deserialize(account.refreshToken)
 
-    if (!result?.accessToken) throw new Error('No access token in refresh response')
+    const accounts = await msal.getAllAccounts()
+    if (accounts.length === 0) {
+      throw new Error(`No account in MSAL cache for ${account.id} — user must re-authenticate`)
+    }
+
+    const result = await msal.acquireTokenSilent({
+      account: accounts[0],
+      scopes: account.scopes.split(' '),
+    })
+
+    if (!result?.accessToken) throw new Error('No access token in silent refresh response')
+
+    // Re-serialize the updated cache (MSAL rotates the refresh token automatically)
+    const updatedCache = msal.getTokenCache().serialize()
 
     return await db.syncAccount.update({
       where: { id: account.id },
       data: {
         accessToken: result.accessToken,
+        refreshToken: updatedCache,
         tokenExpiry: new Date(result.expiresOn ?? Date.now() + 3600 * 1000),
       },
     })
