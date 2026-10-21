@@ -3,6 +3,7 @@ import request from 'supertest'
 import app from '../src/index.js'
 import { applyRules } from '../src/lib/rulesEngine.js'
 import type { SyncMessage } from '../src/lib/rulesEngine.js'
+import { buildCard } from '../src/workers/outlookSync.js'
 
 let token: string
 beforeEach(async () => {
@@ -106,5 +107,25 @@ describe('Rules engine', () => {
       { source: 'email', keyword: 'Q4', areaId: 'job1', column: 'To Do', urgency: 'medium', priority: 0, enabled: false } as any,
     ]
     expect(applyRules(msg, rules)).toBeNull()
+  })
+})
+
+describe('Outlook sync', () => {
+  test('buildCard maps email fields to Card create input', () => {
+    const rule = { areaId: 'job1', column: 'To Do', urgency: 'high' } as any
+    const msg: SyncMessage = {
+      externalId: 'id1',
+      source: 'email',
+      fromEmail: 'cfo@co.com',
+      subject: 'Budget approved',
+      sourceUrl: 'https://outlook.office.com/m/1',
+      accountId: 'a1',
+    }
+    const card = buildCard(msg, rule)
+    expect(card.title).toBe('Budget approved')
+    expect(card.areaId).toBe('job1')
+    expect(card.source).toBe('email')
+    expect(card.externalId).toBe('id1')
+    expect(card.column).toBe('To Do')
   })
 })
