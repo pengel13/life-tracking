@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import type { Card } from '../types/index.js'
 import { sortByUrgency } from '../components/dashboard/Dashboard.js'
 import StatsRow from '../components/dashboard/StatsRow.js'
+import KanbanCard from '../components/kanban/KanbanCard.js'
 
 describe('sortByUrgency', () => {
   test('card with due date today ranks above card with no due date', () => {
@@ -47,5 +48,33 @@ describe('StatsRow', () => {
     expect(screen.getByTestId('stat-due-today').textContent).toBe('1')
     // 1 completed today
     expect(screen.getByTestId('stat-done-today').textContent).toBe('1')
+  })
+})
+
+describe('KanbanCard source badge', () => {
+  test('shows email source badge when source is email', () => {
+    const card: Card = {
+      id: '1',
+      areaId: 'job1',
+      column: 'To Do',
+      title: 'Budget',
+      urgency: 'medium',
+      dueDate: null,
+      notes: null,
+      progress: null,
+      totalUnits: null,
+      currentUnit: null,
+      itemType: null,
+      completedAt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      source: 'email',
+      sourceUrl: 'https://outlook.office.com/m/1',
+      externalId: 'email:ext1',
+    }
+    render(<KanbanCard card={card} onDelete={() => {}} />)
+    const link = screen.getByRole('link', { name: /email/i })
+    expect(link).toBeDefined()
+    expect(link.getAttribute('href')).toBe('https://outlook.office.com/m/1')
   })
 })

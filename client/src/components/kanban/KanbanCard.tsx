@@ -105,6 +105,19 @@ export default function KanbanCard({ card, onDelete, onUpdate }: Props) {
           </div>
         </div>
       )}
+
+      {card.source && card.sourceUrl && (
+        <a
+          href={card.sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
+          className="mt-2 inline-flex text-xs text-slate-500 hover:text-slate-400 transition-colors"
+          aria-label={card.source}
+        >
+          {card.source === 'email' ? '✉ email' : '💬 teams'}
+        </a>
+      )}
     </div>
   )
 }
